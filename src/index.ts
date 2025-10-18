@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Events, Collection } from 'discord.js';
 import { config } from 'dotenv';
-import * as express from 'express';
+import express from 'express';
 import { GameCommands } from './commands';
 import { GameStorage } from './storage';
 
@@ -112,7 +112,7 @@ process.on('SIGTERM', () => {
 });
 
 // Simple health check server for Railway
-const app = express.default();
+const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', (req: any, res: any) => {
