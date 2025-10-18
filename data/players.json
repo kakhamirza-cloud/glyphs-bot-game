@@ -1,0 +1,19 @@
+[
+  [
+    "1237810533030166580",
+    {
+      "id": "1237810533030166580",
+      "username": "Dig Bot",
+      "currentTile": 2000,
+      "glyphs": 0,
+      "items": {
+        "pickaxes": 0,
+        "dynamites": 0,
+        "explosives": 0
+      },
+      "lastDigTime": 0,
+      "timeoutUntil": 0,
+      "totalTilesDug": 0
+    }
+  ]
+]
