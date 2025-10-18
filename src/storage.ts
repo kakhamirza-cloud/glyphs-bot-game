@@ -92,7 +92,8 @@ export class GameStorage {
         lastDigTime: 0,
         timeoutUntil: 0,
         totalTilesDug: 0,
-        privateThreadId: undefined
+        privateThreadId: undefined,
+        digProgress: 0
       };
       this.savePlayer(player);
     } else {
@@ -115,6 +116,10 @@ export class GameStorage {
         const playerEntry = playersData.find(([id]: [string, Player]) => id === userId);
         if (playerEntry) {
           const [, playerData] = playerEntry;
+          // Migrate old players to include digProgress
+          if (playerData.digProgress === undefined) {
+            playerData.digProgress = 0;
+          }
           this.players.set(userId, playerData);
         }
       }
@@ -209,6 +214,7 @@ export class GameStorage {
         player.lastDigTime = 0;
         player.timeoutUntil = 0;
         player.totalTilesDug = 0;
+        player.digProgress = 0;
         
         this.savePlayer(player);
         console.log(`Player ${userId} data has been reset`);

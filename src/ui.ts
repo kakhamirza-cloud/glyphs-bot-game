@@ -69,14 +69,20 @@ export class GameUI {
       }
     );
 
-    // Status with live timer
+    // Status with static timer and dig progress
     let statusText = '';
     if (timeoutSeconds > 0) {
-      statusText = `⏰ **Timed out for ${timeoutSeconds} seconds**`;
+      statusText = `⏰ **Timed out for 30 seconds**\n*Use refresh button to check when ready*`;
     } else if (cooldownSeconds > 0) {
-      statusText = `⏱️ **Cooldown: ${cooldownSeconds} seconds**\n*Dig button will auto-enable when ready*`;
+      statusText = `⏱️ **Cooldown: 30 seconds**\n*Use refresh button to check when ready*`;
     } else {
-      statusText = '✅ **Ready to dig!**';
+      const digsRequired = this.game.getDigsRequired(player.currentTile);
+      const digProgress = player.digProgress || 0;
+      if (digProgress > 0) {
+        statusText = `⛏️ **Digging Progress: ${digProgress}/${digsRequired}**\n*Keep digging to complete this tile!*`;
+      } else {
+        statusText = '✅ **Ready to dig!**';
+      }
     }
 
     embed.addFields({

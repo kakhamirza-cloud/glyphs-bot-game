@@ -8,6 +8,7 @@ export interface Player {
   timeoutUntil: number;
   totalTilesDug: number;
   privateThreadId?: string; // Store the private thread ID for this player
+  digProgress: number; // Track progress on current tile (0 to digsRequired-1)
 }
 
 export interface PlayerItems {

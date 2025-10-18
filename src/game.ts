@@ -21,13 +21,13 @@ export class MiningGame {
    * Calculate the number of digs needed for a tile based on depth
    * Deeper tiles require more digs (1x, 2x, 3x, etc.)
    */
-  private getDigsRequired(tile: number): number {
-    if (tile >= 1800) return 1;
-    if (tile >= 1400) return 2;
-    if (tile >= 1000) return 3;
-    if (tile >= 600) return 4;
-    if (tile >= 200) return 5;
-    return 6; // Deepest tiles require 6 digs
+  getDigsRequired(tile: number): number {
+    if (tile > 1800) return 1;  // Tiles 2000-1801: 1 dig
+    if (tile > 1400) return 2;  // Tiles 1800-1401: 2 digs
+    if (tile > 1000) return 3;  // Tiles 1400-1001: 3 digs
+    if (tile > 600) return 4;   // Tiles 1000-601: 4 digs
+    if (tile > 200) return 5;   // Tiles 600-201: 5 digs
+    return 6; // Tiles 200-0: 6 digs (deepest)
   }
 
   /**
@@ -171,14 +171,33 @@ export class MiningGame {
           break;
       }
     } else {
-      // Normal digging
+      // Normal digging with dig counter system
       const digsRequired = this.getDigsRequired(player.currentTile);
-      newTile = Math.max(0, player.currentTile - 1);
       
-      const mineral = this.getRandomMineral(newTile);
-      glyphsEarned = mineral.reward;
+      // Initialize digProgress if not set
+      if (player.digProgress === undefined) {
+        player.digProgress = 0;
+      }
       
-      message = `⛏️ Dug 1 tile (${digsRequired}x required) - Found ${mineral.name} (+${glyphsEarned} glyphs)`;
+      // Increment dig progress
+      player.digProgress++;
+      
+      if (player.digProgress >= digsRequired) {
+        // Tile is fully dug, move to next tile
+        newTile = Math.max(0, player.currentTile - 1);
+        player.digProgress = 0; // Reset progress for new tile
+        
+        const mineral = this.getRandomMineral(newTile);
+        glyphsEarned = mineral.reward;
+        
+        message = `⛏️ Tile completed! Moved to tile ${newTile} - Found ${mineral.name} (+${glyphsEarned} glyphs)`;
+      } else {
+        // Still digging current tile
+        newTile = player.currentTile; // Stay on same tile
+        glyphsEarned = 0; // No reward until tile is complete
+        
+        message = `⛏️ Digging... (${player.digProgress}/${digsRequired}) - Keep digging to complete this tile!`;
+      }
     }
 
     // Check for Zonk
@@ -240,7 +259,8 @@ export class MiningGame {
       items: { pickaxes: 0, dynamites: 0, explosives: 0 },
       lastDigTime: 0,
       timeoutUntil: 0,
-      totalTilesDug: 0
+      totalTilesDug: 0,
+      digProgress: 0
     };
   }
 }

@@ -1,9 +1,9 @@
 [
   [
-    "1237810533030166580",
+    "410662767981232128",
     {
-      "id": "1237810533030166580",
-      "username": "Dig Bot",
+      "id": "410662767981232128",
+      "username": "mr.z6931",
       "currentTile": 2000,
       "glyphs": 0,
       "items": {
@@ -13,7 +13,8 @@
       },
       "lastDigTime": 0,
       "timeoutUntil": 0,
-      "totalTilesDug": 0
+      "totalTilesDug": 0,
+      "digProgress": 0
     }
   ]
 ]

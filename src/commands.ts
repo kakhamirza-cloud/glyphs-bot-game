@@ -116,6 +116,9 @@ export class GameCommands {
         case 'addglyphs':
           await this.handleAddGlyphs(interaction);
           break;
+        case 'dig':
+          await this.handleAdminDig(interaction);
+          break;
         default:
           await interaction.reply({ content: 'Unknown command!', ephemeral: true });
       }
@@ -436,6 +439,7 @@ export class GameCommands {
     resetPlayer.lastDigTime = 0;
     resetPlayer.timeoutUntil = 0;
     resetPlayer.totalTilesDug = 0;
+    resetPlayer.digProgress = 0;
     
     // Save the reset player
     this.storage.savePlayer(resetPlayer);
@@ -499,6 +503,115 @@ export class GameCommands {
         }
       )
       .setFooter({ text: 'Everyone starts fresh now!' })
+      .setTimestamp();
+
+    await interaction.reply({ 
+      embeds: [embed],
+      ephemeral: true 
+    });
+  }
+
+  /**
+   * Admin dig command - allows admin to dig multiple tiles for testing
+   */
+  private async handleAdminDig(interaction: ChatInputCommandInteraction): Promise<void> {
+    const tiles = interaction.options.getInteger('tiles', true);
+    const targetUser = interaction.options.getUser('user', false);
+    
+    // Validate tiles count
+    if (tiles <= 0) {
+      await interaction.reply({ 
+        content: '❌ Number of tiles must be greater than 0!', 
+        ephemeral: true 
+      });
+      return;
+    }
+
+    if (tiles > 100) {
+      await interaction.reply({ 
+        content: '❌ Cannot dig more than 100 tiles at once!', 
+        ephemeral: true 
+      });
+      return;
+    }
+
+    // Determine target user
+    const targetUserId = targetUser ? targetUser.id : interaction.user.id;
+    const targetUsername = targetUser ? targetUser.username : interaction.user.username;
+    
+    // Get or create player
+    const player = this.storage.getOrCreatePlayer(targetUserId, targetUsername);
+    
+    // Store original values
+    const originalTile = player.currentTile;
+    const originalGlyphs = player.glyphs;
+    const originalTilesDug = player.totalTilesDug;
+    
+    // Perform multiple digs (bypass cooldown for admin)
+    let totalGlyphsEarned = 0;
+    let finalTile = player.currentTile;
+    let actualTilesDug = 0;
+    
+    for (let i = 0; i < tiles; i++) {
+      // Temporarily reset cooldown for admin dig
+      const originalLastDigTime = player.lastDigTime;
+      const originalTimeoutUntil = player.timeoutUntil;
+      player.lastDigTime = 0;
+      player.timeoutUntil = 0;
+      
+      const result = this.game.dig(player, undefined);
+      
+      if (result.success) {
+        totalGlyphsEarned += result.glyphsEarned;
+        finalTile = result.newTile;
+        actualTilesDug++;
+      } else {
+        // Restore original cooldown values if dig failed
+        player.lastDigTime = originalLastDigTime;
+        player.timeoutUntil = originalTimeoutUntil;
+        break; // Stop if dig fails (e.g., reached tile 0)
+      }
+    }
+    
+    // Save player data
+    this.storage.savePlayer(player);
+
+    const embed = new EmbedBuilder()
+      .setTitle('⛏️ Admin Dig Complete')
+      .setColor(0x2ECC71)
+      .setDescription(`Successfully dug **${actualTilesDug}** tiles!`)
+      .addFields(
+        {
+          name: '👤 Player',
+          value: `**${targetUsername}**`,
+          inline: true
+        },
+        {
+          name: '🎯 Tiles Dug',
+          value: `**${actualTilesDug}**`,
+          inline: true
+        },
+        {
+          name: '💰 Glyphs Earned',
+          value: `**+${totalGlyphsEarned.toLocaleString()}**`,
+          inline: true
+        },
+        {
+          name: '📍 Starting Tile',
+          value: `**${originalTile.toLocaleString()}**`,
+          inline: true
+        },
+        {
+          name: '📍 Final Tile',
+          value: `**${finalTile.toLocaleString()}**`,
+          inline: true
+        },
+        {
+          name: '📊 Total Tiles Dug',
+          value: `**${player.totalTilesDug.toLocaleString()}**`,
+          inline: true
+        }
+      )
       .setTimestamp();
 
     await interaction.reply({ 
@@ -581,45 +694,12 @@ export class GameCommands {
 
   /**
    * Start auto-refresh for a user's game message
+   * Note: Auto-refresh is disabled to prevent lag after hours of running
    */
   private startAutoRefresh(userId: string, message: Message): void {
-    // Clear any existing timer for this user
-    this.stopAutoRefresh(userId);
-
-    const player = this.storage.getOrCreatePlayer(userId, message.author.username);
-    const timeRemaining = this.game.getTimeRemaining(player);
-    
-    // Only start auto-refresh if there's an active cooldown or timeout
-    if (timeRemaining.cooldown > 0 || timeRemaining.timeout > 0) {
-      const timer = setInterval(async () => {
-        try {
-          // Check if message still exists and is editable
-          if (!message) {
-            this.stopAutoRefresh(userId);
-            return;
-          }
-
-          const currentPlayer = this.storage.getOrCreatePlayer(userId, message.author.username);
-          const currentTimeRemaining = this.game.getTimeRemaining(currentPlayer);
-          
-          const embed = this.ui.createGameEmbed(currentPlayer);
-          const buttons = this.ui.createActionButtons(currentPlayer);
-          
-          await message.edit({ embeds: [embed], components: [buttons] });
-          
-          // Stop auto-refresh if cooldown/timeout is finished
-          if (currentTimeRemaining.cooldown <= 0 && currentTimeRemaining.timeout <= 0) {
-            this.stopAutoRefresh(userId);
-            return;
-          }
-        } catch (error) {
-          console.error('Error in auto-refresh:', error);
-          this.stopAutoRefresh(userId);
-        }
-      }, 2000); // Update every 2 seconds to reduce API calls
-
-      this.activeTimers.set(userId, timer);
-    }
+    // Auto-refresh disabled to prevent performance issues
+    // Users can manually refresh using the refresh button
+    console.log(`Auto-refresh disabled for user ${userId}. Manual refresh available.`);
   }
 
   /**
@@ -687,6 +767,25 @@ export class GameCommands {
           option
             .setName('user')
             .setDescription('User to add glyphs to (defaults to yourself)')
+            .setRequired(false)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+      
+      new SlashCommandBuilder()
+        .setName('dig')
+        .setDescription('Dig multiple tiles for testing (Admin only)')
+        .addIntegerOption(option =>
+          option
+            .setName('tiles')
+            .setDescription('Number of tiles to dig')
+            .setRequired(true)
+            .setMinValue(1)
+            .setMaxValue(100)
+        )
+        .addUserOption(option =>
+          option
+            .setName('user')
+            .setDescription('User to dig for (defaults to yourself)')
             .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
