@@ -92,7 +92,7 @@ export class GameUI {
     });
 
     // Progress bar
-    const progress = Math.max(0, Math.min(100, ((2000 - player.currentTile) / 2000) * 100));
+    const progress = Math.max(0, Math.min(100, ((3000 - player.currentTile) / 3000) * 100));
     const progressBar = this.createProgressBar(progress);
     embed.addFields({
       name: '📈 Progress',
@@ -234,7 +234,7 @@ export class GameUI {
           const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
           return `${medal} **${entry.username}**\n` +
                  `   Tiles: ${entry.tilesDug.toLocaleString()} | ` +
-                 `Depth: ${(2000 - entry.currentTile).toLocaleString()} | ` +
+                 `Depth: ${(3000 - entry.currentTile).toLocaleString()} | ` +
                  `Glyphs: ${entry.glyphs.toLocaleString()}`;
         })
         .join('\n\n');
@@ -269,7 +269,7 @@ export class GameUI {
         },
         {
           name: '🎯 Current Depth',
-          value: `**${(2000 - player.currentTile).toLocaleString()}** tiles deep`,
+          value: `**${(3000 - player.currentTile).toLocaleString()}** tiles deep`,
           inline: true
         }
       )
@@ -322,7 +322,7 @@ export class GameUI {
       .addFields(
         {
           name: '🎯 Goal',
-          value: 'Dig from tile 2,000 down to tile 0!',
+          value: 'Dig from tile 3,000 down to tile 0!',
           inline: false
         },
         {
@@ -337,7 +337,7 @@ export class GameUI {
         },
         {
           name: '💥 Zonks',
-          value: 'Watch out for Zonks between tiles 200-2000! They can reduce your progress or glyphs!',
+          value: 'Watch out for Zonks on any tile! They can reduce your progress or glyphs!',
           inline: false
         },
         {
@@ -379,7 +379,7 @@ export class GameUI {
         },
         {
           name: '💥 Zonks',
-          value: '• Random events between tiles 200-2000\n• Can lose glyphs, reduce progress, or timeout\n• 8% chance of occurring',
+          value: '• Random events on any tile\n• Can lose glyphs, reduce progress, or timeout\n• 10% chance of occurring',
           inline: false
         }
       )

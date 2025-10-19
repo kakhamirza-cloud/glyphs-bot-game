@@ -433,7 +433,7 @@ export class GameCommands {
     const resetPlayer = this.storage.getOrCreatePlayer(userId, username);
     
     // Reset all progress
-    resetPlayer.currentTile = 2000;
+    resetPlayer.currentTile = 3000;
     resetPlayer.glyphs = 0;
     resetPlayer.items = { pickaxes: 0, dynamites: 0, explosives: 0 };
     resetPlayer.lastDigTime = 0;
@@ -451,7 +451,7 @@ export class GameCommands {
       .addFields(
         {
           name: '🎯 Current Tile',
-          value: '**2,000** (Starting position)',
+          value: '**3,000** (Starting position)',
           inline: true
         },
         {
