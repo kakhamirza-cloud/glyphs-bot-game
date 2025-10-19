@@ -86,7 +86,7 @@ export class GameStorage {
       player = {
         id: userId,
         username,
-        currentTile: 2000,
+        currentTile: 3000,
         glyphs: 0,
         items: { pickaxes: 0, dynamites: 0, explosives: 0 },
         lastDigTime: 0,
@@ -162,7 +162,7 @@ export class GameStorage {
     const players = this.getAllPlayers();
     const totalTilesDug = players.reduce((sum, player) => sum + player.totalTilesDug, 0);
     const averageDepth = players.length > 0 
-      ? players.reduce((sum, player) => sum + (2000 - player.currentTile), 0) / players.length 
+      ? players.reduce((sum, player) => sum + (3000 - player.currentTile), 0) / players.length 
       : 0;
 
     return {
@@ -208,7 +208,7 @@ export class GameStorage {
       const player = this.players.get(userId);
       if (player) {
         // Reset player to starting state
-        player.currentTile = 2000;
+        player.currentTile = 3000;
         player.glyphs = 0;
         player.items = { pickaxes: 0, dynamites: 0, explosives: 0 };
         player.lastDigTime = 0;
