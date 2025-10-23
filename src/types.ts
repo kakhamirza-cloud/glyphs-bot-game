@@ -35,6 +35,14 @@ export interface DigResult {
   zonkEffect?: ZonkEffect;
   newTile: number;
   message: string;
+  specialReward?: SpecialReward;
+}
+
+export interface SpecialReward {
+  type: 'discord_nitro' | 'cash_10' | 'discord_classic';
+  name: string;
+  description: string;
+  value: string;
 }
 
 export interface GameStats {

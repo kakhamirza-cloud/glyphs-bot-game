@@ -1,17 +1,21 @@
-import { Player, LeaderboardEntry } from './types';
+import { Player, LeaderboardEntry, SpecialReward } from './types';
 import * as fs from 'fs';
 import * as path from 'path';
 
 export class GameStorage {
   private readonly dataPath: string;
   private readonly playersFile: string;
+  private readonly specialRewardsFile: string;
   private players: Map<string, Player> = new Map();
+  private specialRewards: Map<string, { tile: number; claimedBy?: string; claimedAt?: string }> = new Map();
 
   constructor() {
     this.dataPath = path.join(__dirname, '..', 'data');
     this.playersFile = path.join(this.dataPath, 'players.json');
+    this.specialRewardsFile = path.join(this.dataPath, 'special-rewards.json');
     this.ensureDataDirectory();
     this.loadPlayers();
+    this.loadSpecialRewards();
   }
 
   private ensureDataDirectory(): void {
@@ -33,6 +37,54 @@ export class GameStorage {
     } catch (error) {
       console.error('Error loading players:', error);
       this.players = new Map();
+    }
+  }
+
+  private loadSpecialRewards(): void {
+    try {
+      if (fs.existsSync(this.specialRewardsFile)) {
+        const data = fs.readFileSync(this.specialRewardsFile, 'utf8');
+        const rewardsData = JSON.parse(data);
+        
+        // Convert array back to Map
+        this.specialRewards = new Map(rewardsData);
+        console.log(`Loaded ${this.specialRewards.size} special rewards from storage`);
+      } else {
+        // Initialize special rewards if file doesn't exist
+        this.initializeSpecialRewards();
+      }
+    } catch (error) {
+      console.error('Error loading special rewards:', error);
+      this.specialRewards = new Map();
+      this.initializeSpecialRewards();
+    }
+  }
+
+  private initializeSpecialRewards(): void {
+    // Generate random tiles for each reward (adjusted for 2000 starting tile)
+    const nitroTile = Math.floor(Math.random() * 1001) + 1000; // 1000-2000
+    const cashTile = Math.floor(Math.random() * 501) + 1000;   // 1000-1500
+    const classicTile = Math.floor(Math.random() * 101) + 2000; // 2000-2100
+
+    this.specialRewards.set('discord_nitro', { tile: nitroTile });
+    this.specialRewards.set('cash_10', { tile: cashTile });
+    this.specialRewards.set('discord_classic', { tile: classicTile });
+
+    this.saveSpecialRewards();
+    console.log('Special rewards initialized:', {
+      nitro: nitroTile,
+      cash: cashTile,
+      classic: classicTile
+    });
+  }
+
+  private saveSpecialRewards(): void {
+    try {
+      // Convert Map to array for JSON serialization
+      const rewardsArray = Array.from(this.specialRewards.entries());
+      fs.writeFileSync(this.specialRewardsFile, JSON.stringify(rewardsArray, null, 2));
+    } catch (error) {
+      console.error('Error saving special rewards:', error);
     }
   }
 
@@ -86,7 +138,7 @@ export class GameStorage {
       player = {
         id: userId,
         username,
-        currentTile: 3000,
+        currentTile: 2000,
         glyphs: 0,
         items: { pickaxes: 0, dynamites: 0, explosives: 0 },
         lastDigTime: 0,
@@ -162,7 +214,7 @@ export class GameStorage {
     const players = this.getAllPlayers();
     const totalTilesDug = players.reduce((sum, player) => sum + player.totalTilesDug, 0);
     const averageDepth = players.length > 0 
-      ? players.reduce((sum, player) => sum + (3000 - player.currentTile), 0) / players.length 
+      ? players.reduce((sum, player) => sum + (2000 - player.currentTile), 0) / players.length 
       : 0;
 
     return {
@@ -208,7 +260,7 @@ export class GameStorage {
       const player = this.players.get(userId);
       if (player) {
         // Reset player to starting state
-        player.currentTile = 3000;
+        player.currentTile = 2000;
         player.glyphs = 0;
         player.items = { pickaxes: 0, dynamites: 0, explosives: 0 };
         player.lastDigTime = 0;
@@ -222,6 +274,107 @@ export class GameStorage {
     } catch (error) {
       console.error('Error resetting player data:', error);
     }
+  }
+
+  /**
+   * Check if a tile contains a special reward
+   */
+  checkSpecialReward(tile: number): SpecialReward | null {
+    for (const [rewardType, rewardData] of this.specialRewards.entries()) {
+      if (rewardData.tile === tile && !rewardData.claimedBy) {
+        const rewardMap = {
+          'discord_nitro': {
+            type: 'discord_nitro' as const,
+            name: 'Discord Nitro',
+            description: '1 Month Discord Nitro Subscription',
+            value: '$9.99 value'
+          },
+          'cash_10': {
+            type: 'cash_10' as const,
+            name: '$10 Cash Reward',
+            description: 'Real money reward',
+            value: '$10 USD'
+          },
+          'discord_classic': {
+            type: 'discord_classic' as const,
+            name: 'Discord Classic',
+            description: 'Discord Classic Subscription',
+            value: '$4.99 value'
+          }
+        };
+        return rewardMap[rewardType as keyof typeof rewardMap];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Claim a special reward
+   */
+  claimSpecialReward(tile: number, userId: string, username: string): SpecialReward | null {
+    for (const [rewardType, rewardData] of this.specialRewards.entries()) {
+      if (rewardData.tile === tile && !rewardData.claimedBy) {
+        // Mark as claimed
+        rewardData.claimedBy = userId;
+        rewardData.claimedAt = new Date().toISOString();
+        this.saveSpecialRewards();
+
+        const rewardMap = {
+          'discord_nitro': {
+            type: 'discord_nitro' as const,
+            name: 'Discord Nitro',
+            description: '1 Month Discord Nitro Subscription',
+            value: '$9.99 value'
+          },
+          'cash_10': {
+            type: 'cash_10' as const,
+            name: '$10 Cash Reward',
+            description: 'Real money reward',
+            value: '$10 USD'
+          },
+          'discord_classic': {
+            type: 'discord_classic' as const,
+            name: 'Discord Classic',
+            description: 'Discord Classic Subscription',
+            value: '$4.99 value'
+          }
+        };
+        
+        console.log(`Special reward claimed: ${rewardType} by ${username} (${userId}) at tile ${tile}`);
+        return rewardMap[rewardType as keyof typeof rewardMap];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get special rewards status
+   */
+  getSpecialRewardsStatus(): { [key: string]: { tile: number; claimed: boolean; claimedBy?: string; claimedAt?: string } } {
+    const status: { [key: string]: { tile: number; claimed: boolean; claimedBy?: string; claimedAt?: string } } = {};
+    
+    for (const [rewardType, rewardData] of this.specialRewards.entries()) {
+      status[rewardType] = {
+        tile: rewardData.tile,
+        claimed: !!rewardData.claimedBy,
+        claimedBy: rewardData.claimedBy,
+        claimedAt: rewardData.claimedAt
+      };
+    }
+    
+    return status;
+  }
+
+  /**
+   * Export all data
+   */
+  exportAllData(): any {
+    return {
+      players: Array.from(this.players.entries()),
+      specialRewards: Array.from(this.specialRewards.entries()),
+      gameStats: this.getGameStats(),
+      exportDate: new Date().toISOString()
+    };
   }
 
   /**

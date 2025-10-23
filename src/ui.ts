@@ -92,7 +92,7 @@ export class GameUI {
     });
 
     // Progress bar
-    const progress = Math.max(0, Math.min(100, ((3000 - player.currentTile) / 3000) * 100));
+    const progress = Math.max(0, Math.min(100, ((2000 - player.currentTile) / 2000) * 100));
     const progressBar = this.createProgressBar(progress);
     embed.addFields({
       name: '📈 Progress',
@@ -234,7 +234,7 @@ export class GameUI {
           const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
           return `${medal} **${entry.username}**\n` +
                  `   Tiles: ${entry.tilesDug.toLocaleString()} | ` +
-                 `Depth: ${(3000 - entry.currentTile).toLocaleString()} | ` +
+                 `Depth: ${(2000 - entry.currentTile).toLocaleString()} | ` +
                  `Glyphs: ${entry.glyphs.toLocaleString()}`;
         })
         .join('\n\n');
@@ -269,7 +269,7 @@ export class GameUI {
         },
         {
           name: '🎯 Current Depth',
-          value: `**${(3000 - player.currentTile).toLocaleString()}** tiles deep`,
+          value: `**${(2000 - player.currentTile).toLocaleString()}** tiles deep`,
           inline: true
         }
       )
@@ -322,7 +322,7 @@ export class GameUI {
       .addFields(
         {
           name: '🎯 Goal',
-          value: 'Dig from tile 3,000 down to tile 0!',
+          value: 'Dig from tile 2,000 down to tile 0!',
           inline: false
         },
         {
@@ -337,7 +337,7 @@ export class GameUI {
         },
         {
           name: '💥 Zonks',
-          value: 'Watch out for Zonks on any tile! They can reduce your progress or glyphs!',
+          value: 'Watch out for Zonks between tiles 50-500! They can reduce your progress or glyphs!',
           inline: false
         },
         {
@@ -378,12 +378,55 @@ export class GameUI {
           inline: false
         },
         {
+          name: '🎁 Special Rewards',
+          value: '• **Discord Nitro**: Hidden in tiles 1000-2000\n• **$10 Cash**: Hidden in tiles 1000-1500\n• **Discord Classic**: Hidden in tiles 2000-2100\n• Each reward can only be claimed once globally!',
+          inline: false
+        },
+        {
           name: '💥 Zonks',
-          value: '• Random events on any tile\n• Can lose glyphs, reduce progress, or timeout\n• 10% chance of occurring',
+          value: '• Random events between tiles 50-500\n• Can lose glyphs, reduce progress, or timeout\n• 8% chance of occurring',
           inline: false
         }
       )
       .setFooter({ text: 'Good luck mining!' });
+  }
+
+  /**
+   * Create special rewards status embed
+   */
+  createSpecialRewardsEmbed(rewardsStatus: any): EmbedBuilder {
+    const embed = new EmbedBuilder()
+      .setTitle('🎁 Special Rewards Status')
+      .setColor(0xFFD700)
+      .setDescription('Current status of all special rewards in the game')
+      .setTimestamp();
+
+    // Add each reward status
+    embed.addFields(
+      {
+        name: '🎮 Discord Nitro',
+        value: rewardsStatus.discord_nitro.claimed 
+          ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.discord_nitro.claimedBy}>\nAt: ${new Date(rewardsStatus.discord_nitro.claimedAt!).toLocaleString()}`
+          : `✅ **Available**\nLocation: Tile ${rewardsStatus.discord_nitro.tile}\nValue: $9.99`,
+        inline: true
+      },
+      {
+        name: '💰 $10 Cash Reward',
+        value: rewardsStatus.cash_10.claimed 
+          ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.cash_10.claimedBy}>\nAt: ${new Date(rewardsStatus.cash_10.claimedAt!).toLocaleString()}`
+          : `✅ **Available**\nLocation: Tile ${rewardsStatus.cash_10.tile}\nValue: $10 USD`,
+        inline: true
+      },
+      {
+        name: '🎮 Discord Classic',
+        value: rewardsStatus.discord_classic.claimed 
+          ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.discord_classic.claimedBy}>\nAt: ${new Date(rewardsStatus.discord_classic.claimedAt!).toLocaleString()}`
+          : `✅ **Available**\nLocation: Tile ${rewardsStatus.discord_classic.tile}\nValue: $4.99`,
+        inline: true
+      }
+    );
+
+    return embed;
   }
 
   /**

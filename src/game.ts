@@ -1,4 +1,4 @@
-import { Player, Mineral, ZonkEffect, DigResult, PlayerItems } from './types';
+import { Player, Mineral, ZonkEffect, DigResult, PlayerItems, SpecialReward } from './types';
 
 export class MiningGame {
   private readonly MINERALS: Mineral[] = [
@@ -12,8 +12,8 @@ export class MiningGame {
     { name: 'Mythril', reward: 500, rarity: 'legendary' }
   ];
 
-  private readonly ZONK_TILE_RANGE = { min: 0, max: 3000 }; // Zonks can happen on any tile
-  private readonly ZONK_CHANCE = 0.10; // 10% chance
+  private readonly ZONK_TILE_RANGE = { min: 50, max: 500 };
+  private readonly ZONK_CHANCE = 0.08; // 8% chance
   private readonly DIG_COOLDOWN = 30000; // 30 seconds
   private readonly TIMEOUT_DURATION = 30000; // 30 seconds
 
@@ -22,20 +22,19 @@ export class MiningGame {
    * Deeper tiles require more digs (1x, 2x, 3x, etc.)
    */
   getDigsRequired(tile: number): number {
-    if (tile > 2800) return 1;  // Tiles 3000-2801: 1 dig
-    if (tile > 2400) return 2;  // Tiles 2800-2401: 2 digs
-    if (tile > 2000) return 3;  // Tiles 2400-2001: 3 digs
-    if (tile > 1500) return 4;  // Tiles 2000-1501: 4 digs
-    if (tile > 1000) return 5;  // Tiles 1500-1001: 5 digs
-    if (tile > 500) return 6;   // Tiles 1000-501: 6 digs
-    return 7; // Tiles 500-0: 7 digs (deepest)
+    if (tile > 1800) return 1;  // Tiles 2000-1801: 1 dig
+    if (tile > 1400) return 2;  // Tiles 1800-1401: 2 digs
+    if (tile > 1000) return 3;  // Tiles 1400-1001: 3 digs
+    if (tile > 600) return 4;   // Tiles 1000-601: 4 digs
+    if (tile > 200) return 5;   // Tiles 600-201: 5 digs
+    return 6; // Tiles 200-0: 6 digs (deepest)
   }
 
   /**
    * Get a random mineral based on depth and rarity
    */
   private getRandomMineral(tile: number): Mineral {
-    const depthFactor = Math.max(0, (3000 - tile) / 3000);
+    const depthFactor = Math.max(0, (2000 - tile) / 2000);
     
     // Deeper tiles have better chances for rare minerals
     const rarityRoll = Math.random();
@@ -117,7 +116,7 @@ export class MiningGame {
   /**
    * Process a dig action for a player
    */
-  dig(player: Player, useItem?: keyof PlayerItems): DigResult {
+  dig(player: Player, useItem?: keyof PlayerItems, checkSpecialReward?: (tile: number) => SpecialReward | null): DigResult {
     const canDigResult = this.canDig(player);
     if (!canDigResult.canDig) {
       const timeLeft = Math.ceil((canDigResult.timeLeft || 0) / 1000);
@@ -145,6 +144,7 @@ export class MiningGame {
     let glyphsEarned = 0;
     let message = '';
     let zonkEffect: ZonkEffect | undefined;
+    let specialReward: SpecialReward | undefined;
 
     // Handle item usage
     if (useItem && player.items[useItem] > 0) {
@@ -211,13 +211,22 @@ export class MiningGame {
           message += `\n💥 ZONK! Lost ${zonkEffect.value} glyphs!`;
           break;
         case 'reduce_tiles':
-          newTile = Math.min(10000, newTile + zonkEffect.value);
+          newTile = Math.min(2000, newTile + zonkEffect.value);
           message += `\n💥 ZONK! Moved back ${zonkEffect.value} tiles!`;
           break;
         case 'timeout':
           player.timeoutUntil = Date.now() + zonkEffect.value;
           message += `\n💥 ZONK! Timed out for 30 seconds!`;
           break;
+      }
+    }
+
+    // Check for special reward if callback is provided
+    if (checkSpecialReward && newTile !== player.currentTile) {
+      const foundReward = checkSpecialReward(newTile);
+      if (foundReward) {
+        specialReward = foundReward;
+        message += `\n🎁 SPECIAL REWARD FOUND! ${specialReward.name} (${specialReward.value})!`;
       }
     }
 
@@ -233,7 +242,8 @@ export class MiningGame {
       glyphsEarned,
       zonkEffect,
       newTile,
-      message
+      message,
+      specialReward
     };
   }
 
@@ -255,7 +265,7 @@ export class MiningGame {
     return {
       id: userId,
       username,
-      currentTile: 3000,
+      currentTile: 2000,
       glyphs: 0,
       items: { pickaxes: 0, dynamites: 0, explosives: 0 },
       lastDigTime: 0,

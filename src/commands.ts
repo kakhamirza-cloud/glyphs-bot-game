@@ -10,7 +10,8 @@ import {
   Message,
   PermissionFlagsBits,
   ChannelType,
-  ThreadChannel
+  ThreadChannel,
+  AttachmentBuilder
 } from 'discord.js';
 import { MiningGame } from './game';
 import { GameStorage } from './storage';
@@ -118,6 +119,12 @@ export class GameCommands {
           break;
         case 'dig':
           await this.handleAdminDig(interaction);
+          break;
+        case 'export-data':
+          await this.handleExportData(interaction);
+          break;
+        case 'rewards-status':
+          await this.handleRewardsStatus(interaction);
           break;
         default:
           await interaction.reply({ content: 'Unknown command!', ephemeral: true });
@@ -276,8 +283,17 @@ export class GameCommands {
       itemToUse = 'explosives';
     }
 
-    const result = this.game.dig(player, itemToUse);
+    const result = this.game.dig(player, itemToUse, (tile) => this.storage.checkSpecialReward(tile));
     this.storage.savePlayer(player);
+
+    // Check if special reward was found and claim it
+    if (result.specialReward) {
+      const claimedReward = this.storage.claimSpecialReward(result.newTile, userId, username);
+      if (claimedReward) {
+        // Send notification to specific channel
+        await this.sendSpecialRewardNotification(interaction, claimedReward, username, result.newTile);
+      }
+    }
 
     // Check if player won
     if (result.newTile <= 0 && result.success) {
@@ -724,6 +740,134 @@ export class GameCommands {
   }
 
   /**
+   * Send special reward notification
+   */
+  private async sendSpecialRewardNotification(interaction: ButtonInteraction, reward: any, username: string, tile: number): Promise<void> {
+    try {
+      const notificationChannelId = '1305226203065618453';
+      const notificationUserId = '410662767981232128';
+      
+      const channel = await interaction.client.channels.fetch(notificationChannelId);
+      if (channel && channel.isTextBased() && 'send' in channel) {
+        const embed = new EmbedBuilder()
+          .setTitle('🎁 SPECIAL REWARD CLAIMED!')
+          .setColor(0xFFD700)
+          .setDescription(`**${username}** has claimed a special reward!`)
+          .addFields(
+            {
+              name: '🏆 Reward',
+              value: `**${reward.name}**\n${reward.description}`,
+              inline: true
+            },
+            {
+              name: '💰 Value',
+              value: `**${reward.value}**`,
+              inline: true
+            },
+            {
+              name: '📍 Location',
+              value: `**Tile ${tile}**`,
+              inline: true
+            }
+          )
+          .setTimestamp();
+
+        await (channel as any).send({
+          content: `<@${notificationUserId}>`,
+          embeds: [embed]
+        });
+      }
+    } catch (error) {
+      console.error('Error sending special reward notification:', error);
+    }
+  }
+
+  /**
+   * Export data command
+   */
+  private async handleExportData(interaction: ChatInputCommandInteraction): Promise<void> {
+    if (!this.isAdmin(interaction.user.id)) {
+      await interaction.reply({ 
+        content: '🔒 This command is only available to administrators.', 
+        ephemeral: true 
+      });
+      return;
+    }
+
+    try {
+      const exportData = this.storage.exportAllData();
+      const buffer = Buffer.from(JSON.stringify(exportData, null, 2));
+      const attachment = new AttachmentBuilder(buffer, { name: 'glyphs-game-data.json' });
+
+      await interaction.reply({
+        content: '📊 Game data exported successfully!',
+        files: [attachment],
+        ephemeral: true
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      await interaction.reply({
+        content: '❌ Error exporting data. Check console for details.',
+        ephemeral: true
+      });
+    }
+  }
+
+  /**
+   * Rewards status command
+   */
+  private async handleRewardsStatus(interaction: ChatInputCommandInteraction): Promise<void> {
+    if (!this.isAdmin(interaction.user.id)) {
+      await interaction.reply({ 
+        content: '🔒 This command is only available to administrators.', 
+        ephemeral: true 
+      });
+      return;
+    }
+
+    try {
+      const rewardsStatus = this.storage.getSpecialRewardsStatus();
+      
+      const embed = new EmbedBuilder()
+        .setTitle('🎁 Special Rewards Status')
+        .setColor(0x2ECC71)
+        .setDescription('Current status of all special rewards')
+        .addFields(
+          {
+            name: '🎮 Discord Nitro',
+            value: rewardsStatus.discord_nitro.claimed 
+              ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.discord_nitro.claimedBy}>\nAt: ${new Date(rewardsStatus.discord_nitro.claimedAt!).toLocaleString()}`
+              : `✅ **Available**\nLocation: Tile ${rewardsStatus.discord_nitro.tile}`,
+            inline: true
+          },
+          {
+            name: '💰 $10 Cash Reward',
+            value: rewardsStatus.cash_10.claimed 
+              ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.cash_10.claimedBy}>\nAt: ${new Date(rewardsStatus.cash_10.claimedAt!).toLocaleString()}`
+              : `✅ **Available**\nLocation: Tile ${rewardsStatus.cash_10.tile}`,
+            inline: true
+          },
+          {
+            name: '🎮 Discord Classic',
+            value: rewardsStatus.discord_classic.claimed 
+              ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.discord_classic.claimedBy}>\nAt: ${new Date(rewardsStatus.discord_classic.claimedAt!).toLocaleString()}`
+              : `✅ **Available**\nLocation: Tile ${rewardsStatus.discord_classic.tile}`,
+            inline: true
+          }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    } catch (error) {
+      console.error('Error getting rewards status:', error);
+      await interaction.reply({
+        content: '❌ Error getting rewards status. Check console for details.',
+        ephemeral: true
+      });
+    }
+  }
+
+  /**
    * Get slash command definitions
    */
   getSlashCommands() {
@@ -788,6 +932,16 @@ export class GameCommands {
             .setDescription('User to dig for (defaults to yourself)')
             .setRequired(false)
         )
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+      
+      new SlashCommandBuilder()
+        .setName('export-data')
+        .setDescription('Export all game data as JSON file (Admin only)')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+      
+      new SlashCommandBuilder()
+        .setName('rewards-status')
+        .setDescription('Check status of special rewards (Admin only)')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     ];
   }
