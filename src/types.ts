@@ -28,18 +28,27 @@ export interface ZonkEffect {
   value: number;
 }
 
+export interface LuckyTileEffect {
+  type: 'lucky_tile';
+  rewardType: 'explosives' | 'tiles' | 'glyphs';
+  explosivesAdded: number;
+  tilesDug: number;
+  glyphsAdded: number;
+}
+
 export interface DigResult {
   success: boolean;
   mineral?: Mineral;
   glyphsEarned: number;
   zonkEffect?: ZonkEffect;
+  luckyTileEffect?: LuckyTileEffect;
   newTile: number;
   message: string;
   specialReward?: SpecialReward;
 }
 
 export interface SpecialReward {
-  type: 'discord_nitro' | 'cash_10' | 'discord_classic';
+  type: 'discord_nitro' | 'cash_10' | 'discord_classic' | 'cash_20';
   name: string;
   description: string;
   value: string;

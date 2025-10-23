@@ -2,19 +2,25 @@
   [
     "discord_nitro",
     {
-      "tile": 1687
+      "tile": 196
     }
   ],
   [
     "cash_10",
     {
-      "tile": 1491
+      "tile": 109
     }
   ],
   [
     "discord_classic",
     {
-      "tile": 2020
+      "tile": 660
+    }
+  ],
+  [
+    "cash_20",
+    {
+      "tile": 480
     }
   ]
 ]

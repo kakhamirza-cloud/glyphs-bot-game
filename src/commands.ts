@@ -853,6 +853,15 @@ export class GameCommands {
               ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.discord_classic.claimedBy}>\nAt: ${new Date(rewardsStatus.discord_classic.claimedAt!).toLocaleString()}`
               : `✅ **Available**\nLocation: Tile ${rewardsStatus.discord_classic.tile}`,
             inline: true
+          },
+          {
+            name: '💰 $20 Cash Reward',
+            value: rewardsStatus.cash_20?.claimed 
+              ? `❌ **CLAIMED**\nBy: <@${rewardsStatus.cash_20.claimedBy}>\nAt: ${new Date(rewardsStatus.cash_20.claimedAt!).toLocaleString()}`
+              : rewardsStatus.cash_20 
+                ? `✅ **Available**\nLocation: Tile ${rewardsStatus.cash_20.tile}`
+                : `❌ **Not Initialized**`,
+            inline: true
           }
         )
         .setTimestamp();

@@ -61,20 +61,23 @@ export class GameStorage {
   }
 
   private initializeSpecialRewards(): void {
-    // Generate random tiles for each reward (adjusted for 2000 starting tile)
-    const nitroTile = Math.floor(Math.random() * 1001) + 1000; // 1000-2000
-    const cashTile = Math.floor(Math.random() * 501) + 1000;   // 1000-1500
-    const classicTile = Math.floor(Math.random() * 101) + 2000; // 2000-2100
+    // Generate random tiles for each reward (adjusted for new ranges)
+    const nitroTile = Math.floor(Math.random() * 1501); // 0-1500
+    const cash10Tile = Math.floor(Math.random() * 1251); // 0-1250
+    const classicTile = Math.floor(Math.random() * 2001); // 0-2000
+    const cash20Tile = Math.floor(Math.random() * 751); // 0-750
 
     this.specialRewards.set('discord_nitro', { tile: nitroTile });
-    this.specialRewards.set('cash_10', { tile: cashTile });
+    this.specialRewards.set('cash_10', { tile: cash10Tile });
     this.specialRewards.set('discord_classic', { tile: classicTile });
+    this.specialRewards.set('cash_20', { tile: cash20Tile });
 
     this.saveSpecialRewards();
     console.log('Special rewards initialized:', {
       nitro: nitroTile,
-      cash: cashTile,
-      classic: classicTile
+      cash10: cash10Tile,
+      classic: classicTile,
+      cash20: cash20Tile
     });
   }
 
@@ -300,6 +303,12 @@ export class GameStorage {
             name: 'Discord Classic',
             description: 'Discord Classic Subscription',
             value: '$4.99 value'
+          },
+          'cash_20': {
+            type: 'cash_20' as const,
+            name: '$20 Cash Reward',
+            description: 'Real money reward',
+            value: '$20 USD'
           }
         };
         return rewardMap[rewardType as keyof typeof rewardMap];
@@ -337,6 +346,12 @@ export class GameStorage {
             name: 'Discord Classic',
             description: 'Discord Classic Subscription',
             value: '$4.99 value'
+          },
+          'cash_20': {
+            type: 'cash_20' as const,
+            name: '$20 Cash Reward',
+            description: 'Real money reward',
+            value: '$20 USD'
           }
         };
         

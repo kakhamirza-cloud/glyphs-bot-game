@@ -1,4 +1,4 @@
-import { Player, Mineral, ZonkEffect, DigResult, PlayerItems, SpecialReward } from './types';
+import { Player, Mineral, ZonkEffect, LuckyTileEffect, DigResult, PlayerItems, SpecialReward } from './types';
 
 export class MiningGame {
   private readonly MINERALS: Mineral[] = [
@@ -12,8 +12,8 @@ export class MiningGame {
     { name: 'Mythril', reward: 500, rarity: 'legendary' }
   ];
 
-  private readonly ZONK_TILE_RANGE = { min: 50, max: 500 };
-  private readonly ZONK_CHANCE = 0.08; // 8% chance
+  private readonly ZONK_CHANCE = 0.10; // 10% chance
+  private readonly LUCKY_TILE_CHANCE = 0.08; // 8% chance
   private readonly DIG_COOLDOWN = 30000; // 30 seconds
   private readonly TIMEOUT_DURATION = 30000; // 30 seconds
 
@@ -60,10 +60,38 @@ export class MiningGame {
    * Check if a Zonk event should occur
    */
   private shouldTriggerZonk(tile: number): boolean {
-    if (tile < this.ZONK_TILE_RANGE.min || tile > this.ZONK_TILE_RANGE.max) {
-      return false;
-    }
-    return Math.random() < this.ZONK_CHANCE;
+    console.log(`🔍 Checking zonk for tile ${tile}: 10% chance`);
+    const zonkRoll = Math.random();
+    const willTrigger = zonkRoll < this.ZONK_CHANCE;
+    console.log(`🎲 Zonk roll: ${zonkRoll.toFixed(3)} < ${this.ZONK_CHANCE} = ${willTrigger}`);
+    return willTrigger;
+  }
+
+  /**
+   * Check if a Lucky Tile event should occur
+   */
+  private shouldTriggerLuckyTile(tile: number): boolean {
+    console.log(`🍀 Checking lucky tile for tile ${tile}: 8% chance`);
+    const luckyRoll = Math.random();
+    const willTrigger = luckyRoll < this.LUCKY_TILE_CHANCE;
+    console.log(`🎲 Lucky tile roll: ${luckyRoll.toFixed(3)} < ${this.LUCKY_TILE_CHANCE} = ${willTrigger}`);
+    return willTrigger;
+  }
+
+  /**
+   * Generate a Lucky Tile effect
+   */
+  private generateLuckyTileEffect(): LuckyTileEffect {
+    const rewardTypes: LuckyTileEffect['rewardType'][] = ['explosives', 'tiles', 'glyphs'];
+    const randomRewardType = rewardTypes[Math.floor(Math.random() * rewardTypes.length)];
+    
+    return {
+      type: 'lucky_tile',
+      rewardType: randomRewardType,
+      explosivesAdded: randomRewardType === 'explosives' ? 5 : 0,
+      tilesDug: randomRewardType === 'tiles' ? 5 : 0,
+      glyphsAdded: randomRewardType === 'glyphs' ? 2000 : 0
+    };
   }
 
   /**
@@ -144,6 +172,7 @@ export class MiningGame {
     let glyphsEarned = 0;
     let message = '';
     let zonkEffect: ZonkEffect | undefined;
+    let luckyTileEffect: LuckyTileEffect | undefined;
     let specialReward: SpecialReward | undefined;
 
     // Handle item usage
@@ -221,6 +250,28 @@ export class MiningGame {
       }
     }
 
+    // Check for Lucky Tile (independent of Zonks)
+    if (this.shouldTriggerLuckyTile(player.currentTile)) {
+      luckyTileEffect = this.generateLuckyTileEffect();
+      
+      // Apply the specific reward based on type
+      switch (luckyTileEffect.rewardType) {
+        case 'explosives':
+          player.items.explosives += luckyTileEffect.explosivesAdded;
+          message += `\n🍀 LUCKY TILE! Found ${luckyTileEffect.explosivesAdded} explosives!`;
+          break;
+        case 'tiles':
+          newTile = Math.max(0, newTile - luckyTileEffect.tilesDug);
+          player.digProgress = 0; // Reset dig progress for new tile
+          message += `\n🍀 LUCKY TILE! Dug ${luckyTileEffect.tilesDug} tiles instantly!`;
+          break;
+        case 'glyphs':
+          glyphsEarned += luckyTileEffect.glyphsAdded;
+          message += `\n🍀 LUCKY TILE! Found ${luckyTileEffect.glyphsAdded} bonus glyphs!`;
+          break;
+      }
+    }
+
     // Check for special reward if callback is provided
     if (checkSpecialReward && newTile !== player.currentTile) {
       const foundReward = checkSpecialReward(newTile);
@@ -241,6 +292,7 @@ export class MiningGame {
       mineral: this.getRandomMineral(newTile),
       glyphsEarned,
       zonkEffect,
+      luckyTileEffect,
       newTile,
       message,
       specialReward

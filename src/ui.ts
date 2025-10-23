@@ -337,7 +337,12 @@ export class GameUI {
         },
         {
           name: '💥 Zonks',
-          value: 'Watch out for Zonks between tiles 50-500! They can reduce your progress or glyphs!',
+          value: 'Watch out for Zonks on any tile! They can reduce your progress or glyphs!',
+          inline: false
+        },
+        {
+          name: '🍀 Lucky Tiles',
+          value: 'Find Lucky Tiles for amazing bonuses! Get explosives, instant progress, and bonus glyphs!',
           inline: false
         },
         {
@@ -364,7 +369,7 @@ export class GameUI {
       .addFields(
         {
           name: '🎮 Commands',
-          value: '• `/help` - Show this help message\n• `/start` - Start the mining game\n• `/balance` - Check your balance\n• `/leaderboard` - View top players\n• `/reset` - Reset all your progress\n• `/reset-leaderboard` - Reset all player data (admin)',
+          value: '• `/help` - Show this help message\n• `/start` - Start the mining game\n• `/balance` - Check your balance\n• `/leaderboard` - View top players\n• `/reset` - Reset all your progress',
           inline: false
         },
         {
@@ -379,12 +384,17 @@ export class GameUI {
         },
         {
           name: '🎁 Special Rewards',
-          value: '• **Discord Nitro**: Hidden in tiles 1000-2000\n• **$10 Cash**: Hidden in tiles 1000-1500\n• **Discord Classic**: Hidden in tiles 2000-2100\n• Each reward can only be claimed once globally!',
+          value: '• Hidden rewards scattered throughout the mine\n• Each reward can only be claimed once globally\n• First come, first served!',
           inline: false
         },
         {
           name: '💥 Zonks',
-          value: '• Random events between tiles 50-500\n• Can lose glyphs, reduce progress, or timeout\n• 8% chance of occurring',
+          value: '• Random events on any tile\n• Can lose glyphs, reduce progress, or timeout\n• 10% chance of occurring',
+          inline: false
+        },
+        {
+          name: '🍀 Lucky Tiles',
+          value: '• Random bonus events on any tile\n• Get 1 random reward: 5 explosives OR dig 5 tiles instantly OR earn 2000 bonus glyphs\n• 8% chance of occurring (can happen multiple times)',
           inline: false
         }
       )
